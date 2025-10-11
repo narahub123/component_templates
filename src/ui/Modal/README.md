@@ -1,6 +1,6 @@
-# Modal 컴포넌트 가이드
+﻿# Modal 컴포넌트 가이드
 
-모달 컴포넌트는 접근성과 제어 가능성을 중심으로 설계되었습니다. 기본적으로 열림 상태를 부모에서 관리하지만, 필요 시 비제어 모드, 명령형 API, 히스토리 연동, 모바일 동작 제어 등을 선택적으로 사용할 수 있습니다.
+모달 컴포넌트는 접근성과 제어 가능성을 중심으로 설계되었습니다. 기본적으로 제어형 사용을 권장하지만, 필요에 따라 비제어 모드, 명령형 API, 히스토리 연동, 모바일 전환 옵션 등을 활성화할 수 있습니다.
 
 ## 빠르게 살펴보기
 
@@ -34,7 +34,7 @@ function Example() {
           <Modal.CloseButton />
         </Modal.Header>
         <Modal.Body>
-          <p>본문 내용을 여기에 배치합니다.</p>
+          <p>본문 내용을 배치합니다.</p>
           <button ref={primaryActionRef}>확인</button>
         </Modal.Body>
         <Modal.Footer>
@@ -50,7 +50,7 @@ function Example() {
 
 ## 제어 / 비제어 사용
 
-- **제어형(권장)**: `open` + `onOpenChange`. 부모 컴포넌트에서 상태를 관리합니다.
+- **제어형(권장)**: `open` + `onOpenChange`. 부모 컴포넌트가 상태를 관리합니다.
 - **비제어형**: `defaultOpen`만 전달하면 내부 상태로 열림 여부를 관리합니다.
 
 ```tsx
@@ -60,24 +60,24 @@ function Example() {
 
 ## `onOpenChange`와 닫힘 이유
 
-`onOpenChange(nextOpen, meta)` 호출 시 `meta.reason`으로 상태 전환 경로를 확인할 수 있습니다.
+`onOpenChange(nextOpen, meta)` 호출 시 `meta.reason`을 통해 상태 전환 경로를 확인할 수 있습니다.
 
 | reason 값      | 설명                                           |
 |----------------|------------------------------------------------|
 | `programmatic` | 코드에서 직접 `open/close` 호출                |
 | `trigger`      | 트리거 요소 등 사용자 액션으로 열린 경우       |
-| `close-button` | `Modal.CloseButton` 클릭                       |
+| `close-button` | `Modal.CloseButton` 클릭                        |
 | `escape`       | ESC 키 입력                                    |
 | `outside`      | 모달 밖을 클릭                                 |
 | `submit`       | 폼 제출 등 사용처에서 정의한 닫힘              |
 | `history`      | 브라우저 뒤로가기(popstate)                    |
 
-`meta.nativeEvent`에는 가능하면 원본 이벤트가 함께 제공됩니다.
+`meta.nativeEvent`에는 가능하면 원본 이벤트가 함께 전달됩니다.
 
 ## 크기 커스터마이징
 
 - `width`, `height`, `maxWidth`, `maxHeight`, `minWidth`, `minHeight` props로 px·%·vw/vh 단위를 자유롭게 지정할 수 있습니다.
-- 숫자를 전달하면 px 기준으로 자동 변환되고, 문자열은 그대로 적용됩니다.
+- 숫자를 전달하면 px 단위로 자동 변환되고, 문자열은 그대로 적용됩니다.
 - 내부적으로 CSS 커스텀 프로퍼티(`--modal-width` 등)를 사용하므로 `style` prop으로 직접 재정의할 수도 있습니다.
 - 모바일 브레이크포인트(가로 500px 이하)에서는 기본적으로 풀스크린으로 전환되며, 이때는 지정한 `minWidth`/`minHeight`보다 뷰포트 크기가 우선합니다.
 
@@ -93,7 +93,7 @@ function Example() {
 
 ## 모바일 전환 옵션
 
-`mobileBehavior` prop으로 작은 화면에서의 레이아웃을 제어할 수 있습니다. 기본값은 `"fullscreen"`입니다.
+`mobileBehavior` prop으로 작은 화면에서의 레이아웃을 제어합니다. 기본값은 `"fullscreen"`입니다.
 
 | 값            | 설명                                                         |
 |---------------|--------------------------------------------------------------|
@@ -110,6 +110,23 @@ function Example() {
   onOpenChange={setOpen}
   mobileBehavior="sheet"
   maxHeight="75vh"
+/>
+```
+
+## 레이어 우선순위
+
+- 기본 레이어 값은 `overlay: 900`, `modal: 1000`이며 `LAYERS` 상수로 재사용할 수 있습니다.
+- 포털 컨테이너는 `zIndex`를 그대로 사용하고, 오버레이는 `overlayZIndex`, 실제 모달 콘텐츠는 `max(zIndex, overlayZIndex) + 2`로 자동 계산되어 항상 오버레이 위에 렌더링됩니다.
+- `zIndex`와 `overlayZIndex` props를 사용하면 화면별로 우선순위를 덮어쓸 수 있습니다.
+
+```tsx
+import { LAYERS, Modal } from "@/ui";
+
+<Modal
+  open={open}
+  onOpenChange={setOpen}
+  zIndex={LAYERS.modal + 100}
+  overlayZIndex={LAYERS.overlay + 50}
 />
 ```
 
@@ -147,7 +164,7 @@ modalRef.current?.focusFirst();
 ## 포커스 & 접근성
 
 - `initialFocusRef`: 모달이 열릴 때 포커스를 줄 요소.
-- `trapFocus`(기본값 `true`): Tab 이동을 모달 내부로 한정.
+- `trapFocus`(기본값 `true`): Tab 이동을 모달 내부로 한정합니다.
 - `restoreFocusRef`: 모달이 닫힐 때 포커스를 되돌릴 요소.
 - `closeOnEsc`, `closeOnOutsideClick`, `lockScroll` 등 세부 UX 옵션을 제공합니다.
 

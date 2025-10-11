@@ -27,6 +27,7 @@ import type {
   ResolvedModalHistoryOptions,
   ModalMobileBehavior,
 } from "../types";
+import { LAYERS } from "../../constants/layers";
 
 type ModalSizeValue = number | string;
 
@@ -50,6 +51,7 @@ type ModalProps = {
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
   disableKeyBindings?: boolean;
   zIndex?: number;
+  overlayZIndex?: number;
   className?: string;
   style?: CSSProperties;
   portalElement?: HTMLElement | null;
@@ -91,7 +93,8 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       role = "dialog",
       onKeyDown,
       disableKeyBindings = false,
-      zIndex = 1300,
+      zIndex = LAYERS.modal,
+      overlayZIndex = LAYERS.overlay,
       className,
       style,
       portalElement,
@@ -301,13 +304,21 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
         }
       : {};
 
+    const positionerZIndex = Math.max(zIndex ?? 0, overlayZIndex ?? 0) + 1;
+    const contentZIndex = positionerZIndex + 1;
+
     const modalInlineStyle = useMemo<CSSProperties>(() => {
-      const base = { ...sizeStyle, ...safeAreaPadding } as CSSProperties;
+      const base = {
+        ...sizeStyle,
+        ...safeAreaPadding,
+        zIndex: contentZIndex,
+        position: "relative",
+      } as CSSProperties;
       if (style) {
         return { ...base, ...style };
       }
       return base;
-    }, [sizeStyle, style, safeAreaPadding]);
+    }, [sizeStyle, style, safeAreaPadding, contentZIndex]);
 
     const portalClassName = joinClassNames(
       styles.portal,
@@ -318,6 +329,7 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       styles.positioner,
       positionerMobileClassName
     );
+    
 
     useEffect(() => {
       if (!resolvedHistory.enabled || typeof window === "undefined") {
@@ -442,9 +454,17 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
           onMouseDown={handleRootMouseDown}
         >
           {hasOverlay ? (
-            <div className={overlayClassName} aria-hidden="true" />
+            <div
+              className={overlayClassName}
+              aria-hidden="true"
+              style={{ zIndex: overlayZIndex }}
+            />
           ) : null}
-          <div className={positionerClassName}>
+
+          <div
+            className={positionerClassName}
+            style={{ zIndex: positionerZIndex }}
+          >
             <div
               ref={contentRef}
               className={modalClassName}
@@ -471,3 +491,12 @@ ModalRoot.displayName = "ModalRoot";
 
 export type { ModalProps };
 export default ModalRoot;
+
+
+
+
+
+
+
+
+

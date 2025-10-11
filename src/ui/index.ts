@@ -10,3 +10,5 @@ export type {
   ResolvedModalHistoryOptions,
   ModalMobileBehavior,
 } from "./Modal";
+export { LAYERS } from "./constants/layers";
+
