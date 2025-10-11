@@ -1,0 +1,107 @@
+#root {
+  min-height: 100vh;
+  margin: 0;
+  padding: 3rem 1.5rem;
+  background-color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #0f172a;
+}
+
+.appContainer {
+  width: min(640px, 100%);
+  background-color: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 24px 48px -24px rgba(15, 23, 42, 0.35);
+  padding: 2.75rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.appHeader h1 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.appHeader p {
+  margin: 0.75rem 0 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.openButton,
+.primaryButton,
+.secondaryButton {
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.75rem 1.75rem;
+  border: none;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.openButton {
+  align-self: flex-start;
+  background: linear-gradient(135deg, #2563eb, #9333ea);
+  color: #ffffff;
+  box-shadow: 0 18px 36px -18px rgba(79, 70, 229, 0.7);
+}
+
+.openButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 44px -18px rgba(79, 70, 229, 0.65);
+}
+
+.secondaryButton {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.secondaryButton:hover {
+  background-color: #cbd5f5;
+}
+
+.primaryButton {
+  background-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 14px 28px -18px rgba(37, 99, 235, 0.75);
+}
+
+.primaryButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 36px -18px rgba(37, 99, 235, 0.7);
+}
+
+.openButton:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.65);
+  outline-offset: 3px;
+}
+
+.appContainer ul {
+  padding-left: 1.25rem;
+  margin: 1rem 0 0;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.appContainer li + li {
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 640px) {
+  #root {
+    padding: 2rem 1rem;
+  }
+
+  .appContainer {
+    border-radius: 1rem;
+    padding: 2rem 1.5rem;
+  }
+}

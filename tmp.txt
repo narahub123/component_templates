@@ -1,0 +1,131 @@
+import { useCallback, useId, useMemo, useRef, useState } from "react"; // inert ?…ìœ¼ë¡?ë¶„ë¦¬?ˆìœ¼ë¯€ë¡??„ìš”??React ?…ë§Œ ë¶ˆëŸ¬?¨ë‹¤.
+import type { RefObject } from "react"; // ?¸ë??ì„œ ?„ë‹¬?˜ëŠ” ref ?€?…ì„ ëª…ì‹œ???€???ˆì „?±ì„ ? ì??œë‹¤.
+import styles from "../Modal.module.css"; // ëª¨ë‹¬ê³??¤ë²„?ˆì´ ?´ë˜??ê³„ì‚°???¬ìš©?œë‹¤.
+import { joinClassNames } from "../utils"; // ?íƒœ???°ë¥¸ ?´ë˜??ë³‘í•©???„í•´ ? í‹¸ ?¨ìˆ˜ë¥??¬ìš©?œë‹¤.
+import type { ModalContextValue } from "../types"; // ì»¨í…?¤íŠ¸ ê°??€?…ì„ ?¬ì‚¬?©í•œ??
+import { useLockBodyScroll } from "./useLockBodyScroll"; // ë°°ê²½ ?¤í¬ë¡?? ê¸ˆ???´ë‹¹?˜ëŠ” ê¸°ì¡´ ??
+import { useModalFocus } from "./useModalFocus"; // ?¬ì»¤???¸ë©??êµ¬í˜„??ê¸°ì¡´ ??
+import { useModalKeyboard } from "./useModalKeyboard"; // ESC ë°????´ë™??ì²˜ë¦¬?˜ëŠ” ê¸°ì¡´ ??
+import { useModalLifecycle } from "./useModalLifecycle"; // ë§ˆìš´??ë°?ê°€?œì„± ?íƒœë¥??œê³µ?˜ëŠ” ê¸°ì¡´ ??
+import { useModalOutsideClick } from "./useModalOutsideClick"; // ë°”ê¹¥ ?´ë¦­ ?«ê¸°ë¥??´ë‹¹?˜ëŠ” ê¸°ì¡´ ??
+import { usePortalInert } from "./usePortalInert"; // ë°°ê²½ inert ì²˜ë¦¬ë¥??„ë‹´?˜ëŠ” ??ì»¤ìŠ¤?€ ??
+
+type UseModalRootParams = {
+  isOpen: boolean; // ëª¨ë‹¬???´ë ¤ ?ˆëŠ”ì§€ ?¬ë?.
+  onClose: () => void; // ëª¨ë‹¬???«ì„ ???¸ì¶œ??ì½œë°±.
+  closeOnEsc: boolean; // ESC ?¤ë¡œ ?«íì§€ ?¬ë?.
+  closeOnOutsideClick: boolean; // ëª¨ë‹¬ ë°??´ë¦­?¼ë¡œ ?«íì§€ ?¬ë?.
+  initialFocusRef?: RefObject<HTMLElement | null> | null; // ëª¨ë‹¬???´ë¦´ ???¬ì»¤?¤ë? ???”ì†Œ.
+  ariaLabelledBy?: string; // aria-labelledby ?€??id.
+  ariaDescribedBy?: string; // aria-describedby ?€??id.
+  lockScroll: boolean; // ëª¨ë‹¬ ?´ë¦¼ ?™ì•ˆ body ?¤í¬ë¡¤ì„ ? ê?ì§€ ?¬ë?.
+  className?: string; // ëª¨ë‹¬ ì½˜í…ì¸ ì— ì¶”ê????´ë˜?¤ëª….
+  portalElement?: HTMLElement | null; // ?¬í„¸???Œë”ë§í•  ?¬ìš©???•ì˜ DOM ?¸ë“œ.
+};
+
+type UseModalRootResult = {
+  isMounted: boolean; // ?¬í„¸??ëª¨ë‹¬??? ì?? ì? ?¬ë?.
+  targetElement: HTMLElement | null; // createPortal???¬ìš©??DOM ë£¨íŠ¸.
+  contextValue: ModalContextValue; // ?ì‹ ì»´í¬?ŒíŠ¸ê°€ ?¬ìš©??ì»¨í…?¤íŠ¸ ê°?
+  overlayClassName: string; // ?¤ë²„?ˆì´???ìš©???´ë˜?¤ëª….
+  modalClassName: string; // ëª¨ë‹¬ ì½˜í…ì¸ ì— ?ìš©???´ë˜?¤ëª….
+  labelledBy: string | undefined; // aria-labelledby ê°?
+  describedBy: string | undefined; // aria-describedby ê°?
+  handleKeyDown: ReturnType<typeof useModalKeyboard>; // ?¤ë³´???´ë²¤???¸ë“¤??
+  handleRootMouseDown: ReturnType<typeof useModalOutsideClick>; // ë£¨íŠ¸ ?ì—­ ë§ˆìš°???¸ë“¤??
+  contentRef: ModalContextValue["contentRef"]; // ëª¨ë‹¬ ì½˜í…ì¸?ref.
+  portalRef: RefObject<HTMLDivElement | null>; // inert ì²˜ë¦¬?ì„œ ?œì™¸?˜ê¸° ?„í•´ ?„ìš”???¬í„¸ ref.
+};
+
+const useModalRoot = ({
+  isOpen, // ?„ì¬ ëª¨ë‹¬ ?´ë¦¼ ?íƒœ.
+  onClose, // ëª¨ë‹¬ ?«ê¸° ì½œë°±.
+  closeOnEsc, // ESC ?«ê¸° ?µì…˜.
+  closeOnOutsideClick, // ?¸ë? ?´ë¦­ ?«ê¸° ?µì…˜.
+  initialFocusRef, // ì´ˆê¸° ?¬ì»¤???€??ref.
+  ariaLabelledBy, // ?¸ë??ì„œ ?„ë‹¬??labelledBy.
+  ariaDescribedBy, // ?¸ë??ì„œ ?„ë‹¬??describedBy.
+  lockScroll, // ?¤í¬ë¡?? ê¸ˆ ?µì…˜.
+  className, // ì¶”ê? ?´ë˜?¤ëª….
+  portalElement, // ?¬ìš©???•ì˜ ?¬í„¸ ë£¨íŠ¸.
+}: UseModalRootParams): UseModalRootResult => {
+  const { isMounted, isVisible, contentRef } = useModalLifecycle(isOpen); // ëª¨ë‹¬ ë§ˆìš´??ê°€?œì„± ?íƒœë¥?ë°›ì•„ ? ë‹ˆë©”ì´???ë¦„??? ì??œë‹¤.
+  const titleId = useId(); // ì»¨í…?¤íŠ¸???œê³µ??ê¸°ë³¸ ?œëª© id.
+  const descriptionId = useId(); // ì»¨í…?¤íŠ¸???œê³µ??ê¸°ë³¸ ?¤ëª… id.
+  const [registeredLabelId, setRegisteredLabelId] = useState<string | null>(null); // ?ì‹???±ë¡???¼ë²¨ idë¥??€?¥í•œ??
+  const [registeredDescriptionId, setRegisteredDescriptionId] = useState<string | null>(null); // ?ì‹???±ë¡???¤ëª… idë¥??€?¥í•œ??
+  const portalRef = useRef<HTMLDivElement | null>(null); // inert ?œì™¸ ì²˜ë¦¬ë¥??„í•´ ?¬í„¸ DOM ?”ì†Œë¥?ê°€ë¦¬í‚¨??
+
+  useLockBodyScroll({ lockScroll, isMounted, isVisible }); // ëª¨ë‹¬???´ë¦¬ë©?body ?¤í¬ë¡¤ì„ ? ê·¼??
+
+  const { trapFocus } = useModalFocus({
+    contentRef, // ?¬ì»¤???¸ë© ?€??
+    initialFocusRef, // ì´ˆê¸° ?¬ì»¤???„ë³´.
+    isMounted, // DOM??ì¡´ì¬???Œë§Œ ?¤í–‰.
+    isVisible, // ê°€???íƒœ???Œë§Œ ?¤í–‰.
+  }); // ?¬ì»¤???¸ë©??? ì??œë‹¤.
+
+  const handleKeyDown = useModalKeyboard({ closeOnEsc, onClose, trapFocus }); // ?¤ë³´???´ë²¤??ì²˜ë¦¬ë¥??°ê²°?œë‹¤.
+
+  const handleRootMouseDown = useModalOutsideClick({
+    closeOnOutsideClick, // ?¸ë? ?´ë¦­ ?«ê¸° ?µì…˜.
+    onClose, // ?«ê¸° ì½œë°±.
+    contentRef, // ?¸ë? ?´ë¦­ ?ë³„ ê¸°ì?.
+  }); // ëª¨ë‹¬ ?¸ë? ?´ë¦­??ê°ì??œë‹¤.
+
+  const registerLabel = useCallback((id: string | null) => {
+    setRegisteredLabelId(id);
+  }, []); // ?¼ë²¨ ?±ë¡ ?¨ìˆ˜ë¥?ë©”ëª¨?´ì œ?´ì…˜?œë‹¤.
+
+  const registerDescription = useCallback((id: string | null) => {
+    setRegisteredDescriptionId(id);
+  }, []); // ?¤ëª… ?±ë¡ ?¨ìˆ˜ë¥?ë©”ëª¨?´ì œ?´ì…˜?œë‹¤.
+
+  const contextValue = useMemo<ModalContextValue>(
+    () => ({
+      onClose, // ?«ê¸° ì½œë°±.
+      registerLabel, // ?¼ë²¨ ?±ë¡ ?¨ìˆ˜.
+      registerDescription, // ?¤ëª… ?±ë¡ ?¨ìˆ˜.
+      titleId, // ê¸°ë³¸ ?œëª© id.
+      descriptionId, // ê¸°ë³¸ ?¤ëª… id.
+      contentRef, // ëª¨ë‹¬ ì½˜í…ì¸?ref.
+    }),
+    [onClose, registerLabel, registerDescription, titleId, descriptionId, contentRef] // ?˜ì¡´??ë³€????ì»¨í…?¤íŠ¸ ê°’ì„ ê°±ì‹ ?œë‹¤.
+  );
+
+  const labelledBy = ariaLabelledBy ?? registeredLabelId ?? undefined; // props > ?±ë¡ê°??°ì„ ?œìœ„ë¥??°ë¥¸??
+  const describedBy = ariaDescribedBy ?? registeredDescriptionId ?? undefined; // props > ?±ë¡ê°??°ì„ ?œìœ„ë¥??°ë¥¸??
+
+  const targetElement =
+    portalElement ?? (typeof document !== "undefined" ? document.body : null); // ?¬í„¸ ?€?ì´ ?†ìœ¼ë©?document.bodyë¥??¬ìš©?œë‹¤.
+
+  const overlayClassName = joinClassNames(
+    styles.overlay, // ê¸°ë³¸ ?¤ë²„?ˆì´ ?¤í???
+    isVisible ? styles.overlayVisible : styles.overlayHidden // ê°€?œì„±???°ë¼ ?íƒœ ?´ë˜?¤ë? ?ìš©?œë‹¤.
+  );
+
+  const modalClassName = joinClassNames(
+    styles.modal, // ê¸°ë³¸ ëª¨ë‹¬ ?¤í???
+    isVisible ? styles.modalVisible : styles.modalHidden, // ê°€?œì„±???°ë¼ ?íƒœ ?´ë˜?¤ë? ?ìš©?œë‹¤.
+    className // ?„ë‹¬??ì¶”ê? ?´ë˜?¤ë„ ?¬í•¨?œë‹¤.
+  );
+
+  usePortalInert({ isActive: isMounted, portalRef }); // ëª¨ë‹¬???´ë ¸????ë°°ê²½??inertë¥??ìš©?˜ê³  ?«íˆë©??´ì œ?œë‹¤.
+
+  return {
+    isMounted, // ëª¨ë‹¬??DOM???¨ì•„ ?ˆì–´???˜ëŠ”ì§€ ?¬ë?.
+    targetElement, // ?¬í„¸???Œë”ë§ë  ë£¨íŠ¸.
+    contextValue, // ì»¨í…?¤íŠ¸?ì„œ ?¬ìš©??ê°?
+    overlayClassName, // ?¤ë²„?ˆì´ ?´ë˜?¤ëª….
+    modalClassName, // ëª¨ë‹¬ ?´ë˜?¤ëª….
+    labelledBy, // aria-labelledby ê°?
+    describedBy, // aria-describedby ê°?
+    handleKeyDown, // ?¤ë³´???´ë²¤???¸ë“¤??
+    handleRootMouseDown, // ë§ˆìš°???¤ìš´ ?´ë²¤???¸ë“¤??
+    contentRef, // ëª¨ë‹¬ ì½˜í…ì¸?ref.
+    portalRef, // inert ì²˜ë¦¬?ì„œ ?œì™¸?´ì•¼ ???¬í„¸ ref.
+  };
+};
+
+export type { UseModalRootParams, UseModalRootResult }; // ???…ë ¥/ì¶œë ¥ ?€?…ì„ ?¸ë??ì„œ???œìš©?????ˆê²Œ ?´ë³´?¸ë‹¤.
+export { useModalRoot }; // ëª¨ë‹¬ ë£¨íŠ¸ ì»´í¬?ŒíŠ¸ê°€ ?¬ìš©?????ˆë„ë¡??…ì„ ê³µê°œ?œë‹¤.
