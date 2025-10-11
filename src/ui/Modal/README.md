@@ -1,16 +1,33 @@
 ﻿# Modal 컴포넌트 가이드
 
-이 문서는 모달 컴포넌트의 주요 API와 사용 방법을 정리합니다. 기본적으로 제어형(open/onOpenChange) 사용을 권장하지만, 비제어 모드, 명령형 핸들, 히스토리 연동, 모바일 전환 옵션, 오버레이 스타일 커스터마이징 등 다양한 기능을 제공하도록 설계되어 있습니다.
+이 문서는 `src/ui/Modal` 폴더에 정의된 모달 컴포넌트를 사용하는 방법을 정리한 것입니다. 모달은 접근성, 포커스 관리, 중첩 관리까지 고려해 설계됐으며 `ModalStackProvider`와 함께 사용할 때 가장 안정적으로 동작합니다.
 
-## 빠르게 살펴보기
+## 준비하기
 
-`	sx
+```tsx
+import { ModalStackProvider } from "@/ui/Modal/context";
+import { Modal } from "@/ui";
+
+function App() {
+  return (
+    <ModalStackProvider>
+      {/* ...앱 콘텐츠 */}
+    </ModalStackProvider>
+  );
+}
+```
+
+모달을 하나 이상 사용할 계획이라면 루트에 `ModalStackProvider`를 감싸 주세요. 중첩 모달의 포커스·ESC 처리 등이 자동으로 관리됩니다.
+
+## 빠른 예제
+
+```tsx
 import { useRef, useState } from "react";
 import { Modal } from "@/ui";
 
 function Example() {
   const [open, setOpen] = useState(false);
-  const primaryActionRef = useRef<HTMLButtonElement>(null);
+  const primaryButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
     <>
@@ -26,16 +43,17 @@ function Example() {
           }
           setOpen(nextOpen);
         }}
-        initialFocusRef={primaryActionRef}
-        history={{ enabled: true, url: "?modal=example" }}
+        initialFocusRef={primaryButtonRef}
+        mobileBehavior="sheet"
+        overlayStyle={{ backgroundColor: "rgba(17, 25, 40, 0.45)" }}
       >
         <Modal.Header>
           <h2>팀 공지</h2>
-          <Modal.CloseButton />
+          <Modal.CloseButton aria-label="모달 닫기" />
         </Modal.Header>
         <Modal.Body>
-          <p>본문 내용을 여기에 배치합니다.</p>
-          <button ref={primaryActionRef}>확인</button>
+          <p>본문 콘텐츠를 여기에 배치합니다.</p>
+          <button ref={primaryButtonRef}>확인</button>
         </Modal.Body>
         <Modal.Footer>
           <button type="button" onClick={() => setOpen(false)}>
@@ -46,139 +64,101 @@ function Example() {
     </>
   );
 }
-`
+```
 
-## 제어 / 비제어 사용
+`Modal.Header`, `Modal.Body`, `Modal.Footer`, `Modal.CloseButton`은 모두 컴포지션을 위한 서브 컴포넌트입니다. 원하는 구조로 자유롭게 배치할 수 있습니다.
 
-- **제어형(권장)**: open + onOpenChange 조합으로 부모가 상태를 관리합니다.
-- **비제어형**: defaultOpen만 전달하면 내부 상태로 열림 여부를 관리합니다.
+## 상태 제어 & 이벤트
 
-`	sx
-<Modal open={open} onOpenChange={setOpen} />
-<Modal defaultOpen />
-`
+| prop | 설명 |
+|------|------|
+| `open` | 제어형 모드에서 열림 여부를 명시합니다. |
+| `defaultOpen` | 비제어 모드일 때 최초 열림 상태를 지정합니다. |
+| `onOpenChange(nextOpen, meta)` | 모달이 열리거나 닫힐 때 호출됩니다. `meta.reason`으로 닫힘 원인을 확인할 수 있습니다.<br/>`programmatic`, `trigger`, `close-button`, `escape`, `outside`, `submit`, `history` 값을 반환할 수 있습니다. |
+| `history` | `true` 혹은 `{ enabled, url, state }` 형태로 브라우저 히스토리 연동을 제어합니다. 열릴 때 `pushState`, 뒤로가기 시 자동 닫힘이 처리됩니다. |
+| `disableKeyBindings` | `true`이면 ESC·Tab 등 키 처리 로직을 비활성화합니다. |
+| `onKeyDown` | 내부 콘텐츠에 추가로 키 이벤트를 전달하고 싶을 때 사용합니다. |
 
-## onOpenChange와 닫힘 이유
+## 접근성 & 포커스
 
-onOpenChange(nextOpen, meta) 호출 시 meta.reason 값으로 상태가 변경된 원인을 확인할 수 있습니다.
+| prop | 설명 |
+|------|------|
+| `initialFocusRef` | 모달이 열릴 때 최초 포커스를 줄 요소를 지정합니다. 지정하지 않으면 콘텐츠 내 첫 번째 포커스 가능한 요소를 탐색합니다. |
+| `restoreFocusRef` | 모달이 닫힌 뒤 포커스를 돌려줄 요소를 명시합니다. 기본값은 모달을 열었던 트리거입니다. |
+| `ariaLabelledBy`, `ariaDescribedBy` | 모달이 참조할 라벨/설명 요소의 id를 직접 지정하고 싶을 때 사용합니다. 헤더/바디를 사용하면 자동으로 연결됩니다. |
+| `trapFocus` | 기본값 `true`. Tab 이동을 모달 내부로 가두어 접근성을 보장합니다. |
+| `closeOnEsc`, `closeOnOutsideClick` | ESC 키나 외부 클릭으로 닫힘을 허용할지 제어합니다. 기본값은 둘 다 `true`입니다. |
 
-| reason 값      | 설명                                           |
-|----------------|------------------------------------------------|
-| programmatic | 코드에서 직접 open/close 호출                |
-| 	rigger      | 트리거 요소 등 사용자 액션으로 열린 경우       |
-| close-button | Modal.CloseButton 클릭                        |
-| escape       | ESC 키 입력                                    |
-| outside      | 모달 밖을 클릭                                 |
-| submit       | 폼 제출 등 사용처에서 정의한 닫힘              |
-| history      | 브라우저 뒤로가기(popstate)                    |
+## 동작 관련 옵션
 
-meta.nativeEvent에는 가능하다면 원본 DOM 이벤트가 함께 전달됩니다.
+| prop | 설명 |
+|------|------|
+| `lockScroll` | 모달이 열려 있는 동안 문서 스크롤을 잠급니다. 기본값 `true`. |
+| `hasOverlay` | 오버레이 출력 여부를 제어합니다. 기본값 `true`. |
+| `overlayStyle` | 오버레이 요소에 인라인 스타일을 적용합니다. 색상·투명도·blur 등을 자유롭게 지정할 수 있습니다. |
+| `zIndex`, `overlayZIndex` | 기본 레이어 값은 `LAYERS.modal(1000)`과 `LAYERS.overlay(900)`입니다. 필요한 경우 덮어써서 레이어 우선순위를 조정하세요. 콘텐츠는 자동으로 `max(zIndex, overlayZIndex) + 2` 레이어에 위치합니다. |
 
-## 크기 커스터마이징
+## 레이아웃 & 모바일
 
-- width, height, maxWidth, maxHeight, minWidth, minHeight props로 px·%·vw/vh 단위의 크기를 지정할 수 있습니다.
-- 숫자는 px 단위로 자동 변환되며, 문자열은 그대로 적용됩니다.
-- 내부적으로 CSS 커스텀 프로퍼티를 사용하므로 style prop으로 직접 재정의할 수도 있습니다.
-- 뷰포트 너비가 500px 이하인 경우 기본적으로 풀스크린으로 전환되어 minWidth/minHeight보다 뷰포트 크기가 우선됩니다.
+| prop | 설명 |
+|------|------|
+| `width`, `height`, `maxWidth`, `maxHeight`, `minWidth`, `minHeight` | 숫자를 넘기면 px로 해석하고, 문자열은 그대로 적용합니다. 기본 폭/높이 제한은 `min(90vw, 560px)` / `min(90vh, 640px)`입니다. |
+| `mobileBehavior` | 작은 화면에서의 동작을 결정합니다.<br/>- `"fullscreen"`(기본): 100vw × 100vh<br/>- `"centered"`: 지정한 크기를 유지하며 가운데 정렬<br/>- `"sheet"`: 바텀시트 스타일(최대 높이는 `maxHeight` 적용)<br/>두 모드 모두 safe-area padding(`env(safe-area-inset-*)`)을 자동으로 적용합니다. |
+| `style`, `className` | 모달 콘텐츠에 추가 스타일/클래스를 부여합니다. |
 
-`	sx
-<Modal
-  open={open}
-  onOpenChange={setOpen}
-  width={720}
-  maxHeight="80vh"
-  minWidth="320px"
-/>
-`
+## 포털 & 중첩
 
-## 모바일 전환 옵션
+| 항목 | 설명 |
+|------|------|
+| `portalElement` | 기본적으로 `document.body`에 포털링합니다. 특정 컨테이너에 렌더링하려면 DOM 노드를 넘겨 주세요. |
+| `ModalStackProvider` | 중첩 모달 사용 시 반드시 루트에 감싸 주세요. 포커스·ESC·외부 클릭 처리 및 포털 inert 처리가 안전하게 동작합니다. |
+| `overlayStyle` | 오버레이를 직접 스타일링할 때 사용합니다. 예: `overlayStyle={{ backdropFilter: "blur(6px)" }}` |
 
-mobileBehavior prop으로 작은 화면에서의 레이아웃을 제어합니다. 기본값은 "fullscreen"입니다.
+## 명령형 핸들
 
-| 값            | 설명                                                         |
-|---------------|--------------------------------------------------------------|
-| "fullscreen"| 500px 이하에서 폭·높이를 100vw × 100vh로 확장               |
-| "centered"  | 모바일에서도 가운데 정렬 유지, 지정한 폭 범위 내에서 표시  |
-| "sheet"     | 바텀시트 형태로 전환, 최대 높이는 maxHeight로 제한        |
+모달에 ref를 연결하면 다음 메서드를 제공합니다.
 
-- "centered"는 모바일에서도 width 관련 props를 그대로 따르고, "fullscreen"/"sheet"는 폭을 100vw로 강제하기 때문에 높이 관련 옵션(maxHeight, minHeight)만 영향을 줍니다.
-- "fullscreen"과 "sheet"에서는 safe-area padding(env(safe-area-inset-*))이 자동 적용되고, "centered" 역시 좌우 safe-area를 고려한 기본 여백이 포함됩니다.
+```ts
+import type { ModalImperativeHandle } from "@/ui";
 
-`	sx
-<Modal
-  open={open}
-  onOpenChange={setOpen}
-  mobileBehavior="sheet"
-  maxHeight="75vh"
-/>
-`
+const ref = useRef<ModalImperativeHandle>(null);
 
-## 레이어 우선순위 및 오버레이 스타일
+ref.current?.open();
+ref.current?.close({ reason: "programmatic" });
+ref.current?.toggle();
+ref.current?.focusFirst();
+```
 
-- 기본 레이어 값은 overlay: 900, modal: 1000이며 LAYERS 상수로 재사용할 수 있습니다.
-- 포털 컨테이너는 zIndex, 오버레이는 overlayZIndex, 모달 콘텐츠는 max(zIndex, overlayZIndex) + 2로 자동 계산되어 항상 오버레이 위에 표시됩니다.
-- zIndex와 overlayZIndex props로 화면별 레이어 우선순위를 조정할 수 있고, overlayStyle prop을 사용하면 오버레이 색상·투명도·blur 등을 인라인 스타일로 덮어쓸 수 있습니다.
+- `open(meta?)`, `close(meta?)`, `toggle(meta?)`는 제어형·비제어 모드 모두에서 사용할 수 있고, `meta.reason`을 지정해 제어 흐름을 명확히 남길 수 있습니다.
+- `focusFirst()`는 모달 내부 첫 번째 포커스 가능한 요소(닫기 버튼 제외)로 포커스를 이동합니다.
 
-`	sx
-import { LAYERS, Modal } from "@/ui";
+## 애니메이션 & 마운트 전략
 
-<Modal
-  open={open}
-  onOpenChange={setOpen}
-  overlayStyle={{ backgroundColor: "rgba(17, 25, 40, 0.6)" }}
-  zIndex={LAYERS.modal + 100}
-  overlayZIndex={LAYERS.overlay + 50}
-/>
-`
-
-## 명령형 API
-
-ef를 통해 명령형으로 제어할 수 있습니다.
-
-`	sx
-const modalRef = useRef<ModalImperativeHandle>(null);
-
-modalRef.current?.open();
-modalRef.current?.close({ reason: "programmatic" });
-modalRef.current?.toggle();
-modalRef.current?.focusFirst();
-`
-
-ocusFirst()는 모달 내부에서 초점 가능한 첫 요소(닫기 버튼 제외)를 찾아 포커스를 이동시킵니다.
+- 기본 애니메이션은 `opacity` + `translate/scale` 조합입니다.
+- `prefers-reduced-motion: reduce` 환경에서는 트랜지션이 자동으로 제거됩니다.
+- 닫기 애니메이션이 끝난 뒤에만 DOM에서 언마운트하여 깜빡임을 방지합니다.
 
 ## 히스토리 연동
 
-history 옵션을 사용하면 모달이 열릴 때 history.pushState가 호출되고, 브라우저 뒤로가기로 닫히면서 eason: "history"가 전달됩니다.
+`history` prop을 사용하면 모달 열림 상태가 브라우저 히스토리와 연동됩니다.
 
-`	sx
+```tsx
+// 단순 활성화
 <Modal history />
 
+// URL, state를 지정하고 싶을 때
 <Modal
   history={{ enabled: true, url: "?modal=settings", state: { from: "home" } }}
 />
-`
+```
 
-## 포커스 & 접근성 보조 기능
+열릴 때 `pushState`, 뒤로가기 시 자동 `close({ reason: "history" })`가 호출됩니다. 라우터 연동이나 뒤로가기 UX를 맞추고 싶을 때 활용하세요.
 
-- initialFocusRef: 모달이 열릴 때 포커스를 줄 요소
-- 	rapFocus(기본값 	rue): Tab 이동을 모달 내부로 한정
-- estoreFocusRef: 모달이 닫힐 때 포커스를 복원할 요소
-- closeOnEsc, closeOnOutsideClick, lockScroll 등 다양한 UX 옵션 제공
+## 그 외
 
-## 공개 타입
+- 모달은 열릴 때 처음으로 마운트(lazy mount)되며, 닫혔다가 다시 열리면 기존 상태를 재사용하지 않습니다.
+- ESC/Tab 처리, 외부 클릭 리스너는 모달이 열릴 때만 등록되고 닫히면 해제되어 메모리 누수를 방지합니다.
+- 오버레이 색상 기본값은 `rgba(15, 23, 42, 0.45)`입니다. `overlayStyle`로 쉽게 덮어쓸 수 있습니다.
+- 날짜/숫자 형식화나 다국어 라벨링은 모달 사용자 코드에서 처리하면 되며, 컴포넌트는 이를 제한하지 않습니다.
 
-`	s
-import type {
-  ModalProps,
-  ModalImperativeHandle,
-  ModalOpenChangeHandler,
-  ModalOpenChangeMeta,
-  ModalOpenChangeMetaInput,
-  ModalOpenChangeReason,
-  ModalHistoryOptions,
-  ResolvedModalHistoryOptions,
-  ModalMobileBehavior,
-} from "@/ui";
-`
-
-상위 래퍼 컴포넌트나 히스토리 브리지 등을 구현할 때 위 타입들을 활용하세요.
+필요에 따라 위 옵션들을 조합해 사용하면 됩니다. 문제가 있거나 추가 기능이 필요하면 해당 섹션을 참고해 확장해 주세요.
