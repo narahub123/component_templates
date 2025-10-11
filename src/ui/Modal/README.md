@@ -76,9 +76,10 @@ function Example() {
 
 ## 크기 커스터마이징
 
-- `width`, `height`, `maxWidth`, `maxHeight`, `minWidth`, `minHeight` props를 사용하면 픽셀·퍼센트·vw/vh 등 원하는 단위로 크기를 지정할 수 있습니다.
-- 숫자를 전달하면 px 단위로 자동 변환되며, 문자열을 전달하면 그대로 적용됩니다.
-- 내부적으로 CSS 커스텀 프로퍼티(`--modal-width` 등)를 사용하므로, 필요하다면 `style` prop으로 직접 재정의할 수도 있습니다.
+- `width`, `height`, `maxWidth`, `maxHeight`, `minWidth`, `minHeight` props로 px·%·vw/vh 등 원하는 단위를 지정할 수 있습니다.
+- 숫자를 전달하면 px 단위로 자동 변환되고, 문자열을 전달하면 그대로 적용됩니다.
+- 내부적으로 CSS 커스텀 프로퍼티(`--modal-width` 등)를 사용하므로 `style` prop으로도 재정의할 수 있습니다.
+- 모바일 브레이크포인트(가로 500px 이하)에서는 자동으로 풀스크린이 되며, 이때 전달한 `minWidth`/`minHeight`보다 뷰포트 크기가 우선 적용됩니다.
 
 ```tsx
 <Modal
