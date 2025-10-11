@@ -52,6 +52,7 @@ type ModalProps = {
   disableKeyBindings?: boolean;
   zIndex?: number;
   overlayZIndex?: number;
+  overlayStyle?: CSSProperties;
   className?: string;
   style?: CSSProperties;
   portalElement?: HTMLElement | null;
@@ -95,6 +96,7 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       disableKeyBindings = false,
       zIndex = LAYERS.modal,
       overlayZIndex = LAYERS.overlay,
+      overlayStyle,
       className,
       style,
       portalElement,
@@ -457,7 +459,7 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
             <div
               className={overlayClassName}
               aria-hidden="true"
-              style={{ zIndex: overlayZIndex }}
+              style={{ zIndex: overlayZIndex, ...overlayStyle }}
             />
           ) : null}
 
@@ -491,6 +493,11 @@ ModalRoot.displayName = "ModalRoot";
 
 export type { ModalProps };
 export default ModalRoot;
+
+
+
+
+
 
 
 
