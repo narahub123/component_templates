@@ -44,6 +44,7 @@ type UseModalRootParams = {
   disableKeyBindings?: boolean;
   onKeyDown?: (event: ReactKeyboardEvent<HTMLDivElement>) => void;
   className?: string;
+  mobileClassName?: string;
   portalElement?: HTMLElement | null;
 };
 
@@ -76,6 +77,7 @@ const useModalRoot = ({
   disableKeyBindings = false,
   onKeyDown,
   className,
+  mobileClassName,
   portalElement,
 }: UseModalRootParams): UseModalRootResult => {
   const { isMounted, isVisible, contentRef } = useModalLifecycle({
@@ -196,6 +198,7 @@ const useModalRoot = ({
   const modalClassName = joinClassNames(
     styles.modal,
     isVisible ? styles.modalVisible : styles.modalHidden,
+    mobileClassName,
     className
   );
 

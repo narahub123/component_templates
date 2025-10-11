@@ -34,4 +34,5 @@ export type {
   ModalOpenChangeReason,
   ModalHistoryOptions,
   ResolvedModalHistoryOptions,
+  ModalMobileBehavior,
 } from "./types";

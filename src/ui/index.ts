@@ -8,4 +8,5 @@ export type {
   ModalOpenChangeReason,
   ModalHistoryOptions,
   ResolvedModalHistoryOptions,
+  ModalMobileBehavior,
 } from "./Modal";

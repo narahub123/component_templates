@@ -1,16 +1,16 @@
 # Modal 컴포넌트 가이드
 
-모달 컴포넌트는 접근성과 제어 가능성을 중심으로 설계되었습니다. 기본적으로 열림 상태를 부모에서 제어하도록 구성되어 있으며, 필요에 따라 비제어 모드, 명령형 API, 히스토리 연동 등을 선택적으로 사용할 수 있습니다.
+모달 컴포넌트는 접근성과 제어 가능성을 중심으로 설계되었습니다. 기본적으로 열림 상태를 부모에서 관리하지만, 필요 시 비제어 모드, 명령형 API, 히스토리 연동, 모바일 동작 제어 등을 선택적으로 사용할 수 있습니다.
 
 ## 빠르게 살펴보기
 
 ```tsx
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { Modal } from "@/ui";
 
 function Example() {
   const [open, setOpen] = useState(false);
-  const initialFocusRef = useRef<HTMLButtonElement>(null);
+  const primaryActionRef = useRef<HTMLButtonElement>(null);
 
   return (
     <>
@@ -26,16 +26,16 @@ function Example() {
           }
           setOpen(nextOpen);
         }}
-        initialFocusRef={initialFocusRef}
+        initialFocusRef={primaryActionRef}
         history={{ enabled: true, url: "?modal=example" }}
       >
         <Modal.Header>
-          <h2>제목</h2>
+          <h2>팀 알림</h2>
           <Modal.CloseButton />
         </Modal.Header>
         <Modal.Body>
-          <p>본문 영역입니다.</p>
-          <button ref={initialFocusRef}>확인</button>
+          <p>본문 내용을 여기에 배치합니다.</p>
+          <button ref={primaryActionRef}>확인</button>
         </Modal.Body>
         <Modal.Footer>
           <button type="button" onClick={() => setOpen(false)}>
@@ -50,8 +50,8 @@ function Example() {
 
 ## 제어 / 비제어 사용
 
-- **제어형(권장)**: `open` + `onOpenChange` 조합을 사용하여 부모 컴포넌트가 상태를 관리합니다.
-- **비제어형**: `defaultOpen`을 전달하면 내부 상태가 초기화되며, 이후 명시적으로 상태를 바꾸지 않는 한 내부에서 열림 상태를 관리합니다.
+- **제어형(권장)**: `open` + `onOpenChange`. 부모 컴포넌트에서 상태를 관리합니다.
+- **비제어형**: `defaultOpen`만 전달하면 내부 상태로 열림 여부를 관리합니다.
 
 ```tsx
 <Modal open={open} onOpenChange={setOpen} />
@@ -60,26 +60,26 @@ function Example() {
 
 ## `onOpenChange`와 닫힘 이유
 
-모달은 열림/닫힘이 변할 때 `onOpenChange(nextOpen, meta)`를 호출합니다. `meta.reason`을 통해 어떤 경로로 상태가 바뀌었는지 구분할 수 있습니다.
+`onOpenChange(nextOpen, meta)` 호출 시 `meta.reason`으로 상태 전환 경로를 확인할 수 있습니다.
 
-| reason 값        | 설명                              |
-|------------------|-----------------------------------|
-| `programmatic`   | 코드에서 명시적으로 open/close 호출 |
-| `trigger`        | 트리거 요소 등 사용자 액션으로 열림 |
-| `close-button`   | `Modal.CloseButton`으로 닫힘        |
-| `escape`         | Esc 키 입력                        |
-| `outside`        | 모달 외부 클릭                     |
-| `submit`         | 폼 제출 등 사용처 정의             |
-| `history`        | 브라우저 뒤로가기(popstate)        |
+| reason 값      | 설명                                           |
+|----------------|------------------------------------------------|
+| `programmatic` | 코드에서 직접 `open/close` 호출                |
+| `trigger`      | 트리거 요소 등 사용자 액션으로 열린 경우       |
+| `close-button` | `Modal.CloseButton` 클릭                       |
+| `escape`       | ESC 키 입력                                    |
+| `outside`      | 모달 밖을 클릭                                 |
+| `submit`       | 폼 제출 등 사용처에서 정의한 닫힘              |
+| `history`      | 브라우저 뒤로가기(popstate)                    |
 
-`meta.nativeEvent`에는 가능하다면 원본 이벤트가 함께 전달됩니다.
+`meta.nativeEvent`에는 가능하면 원본 이벤트가 함께 제공됩니다.
 
 ## 크기 커스터마이징
 
-- `width`, `height`, `maxWidth`, `maxHeight`, `minWidth`, `minHeight` props로 px·%·vw/vh 등 원하는 단위를 지정할 수 있습니다.
-- 숫자를 전달하면 px 단위로 자동 변환되고, 문자열을 전달하면 그대로 적용됩니다.
-- 내부적으로 CSS 커스텀 프로퍼티(`--modal-width` 등)를 사용하므로 `style` prop으로도 재정의할 수 있습니다.
-- 모바일 브레이크포인트(가로 500px 이하)에서는 자동으로 풀스크린이 되며, 이때 전달한 `minWidth`/`minHeight`보다 뷰포트 크기가 우선 적용됩니다.
+- `width`, `height`, `maxWidth`, `maxHeight`, `minWidth`, `minHeight` props로 px·%·vw/vh 단위를 자유롭게 지정할 수 있습니다.
+- 숫자를 전달하면 px 기준으로 자동 변환되고, 문자열은 그대로 적용됩니다.
+- 내부적으로 CSS 커스텀 프로퍼티(`--modal-width` 등)를 사용하므로 `style` prop으로 직접 재정의할 수도 있습니다.
+- 모바일 브레이크포인트(가로 500px 이하)에서는 기본적으로 풀스크린으로 전환되며, 이때는 지정한 `minWidth`/`minHeight`보다 뷰포트 크기가 우선합니다.
 
 ```tsx
 <Modal
@@ -88,14 +88,33 @@ function Example() {
   width={720}
   maxHeight="80vh"
   minWidth="320px"
->
-  ...
-</Modal>
+/>
+```
+
+## 모바일 전환 옵션
+
+`mobileBehavior` prop으로 작은 화면에서의 레이아웃을 제어할 수 있습니다. 기본값은 `"fullscreen"`입니다.
+
+| 값            | 설명                                                         |
+|---------------|--------------------------------------------------------------|
+| `"fullscreen"`| 500px 이하에서 폭/높이를 100vw/100vh로 확장                  |
+| `"centered"`  | 모바일에서도 가운데 정렬 유지, 지정한 크기 범위 내에서 표시 |
+| `"sheet"`     | 바텀시트 형태로 전환, 최대 높이는 `maxHeight`로 제한         |
+
+- `"centered"`를 선택한 경우에만 `width`/`maxWidth`/`minWidth` 등이 모바일에서도 그대로 적용됩니다. `"fullscreen"`과 `"sheet"`는 폭을 100vw로 강제하기 때문에 높이 관련 옵션(`maxHeight`, `minHeight`)만 영향을 줍니다.
+
+```tsx
+<Modal
+  open={open}
+  onOpenChange={setOpen}
+  mobileBehavior="sheet"
+  maxHeight="75vh"
+/>
 ```
 
 ## 명령형 API
 
-모달은 `ref`를 통해 명령형 제어를 제공합니다.
+`ref`를 통해 명령형 제어를 사용할 수 있습니다.
 
 ```tsx
 const modalRef = useRef<ModalImperativeHandle>(null);
@@ -106,32 +125,32 @@ modalRef.current?.toggle();
 modalRef.current?.focusFirst();
 ```
 
-`focusFirst()`는 모달 내부의 초점 가능한 첫 요소(닫기 버튼 제외)를 찾아 포커스를 부여합니다.
+`focusFirst()`는 모달 내부에서 초점 가능한 첫 요소(닫기 버튼 제외)를 찾아 포커스를 이동시킵니다.
 
 ## 히스토리 연동
 
-`history` 옵션을 사용하면 모달이 열릴 때 `history.pushState`가 수행되고, 브라우저 뒤로가기 시 모달이 닫히며 `reason: "history"`를 전달합니다.
+`history` 옵션을 사용하면 모달이 열릴 때 `history.pushState`가 호출되고, 뒤로가기 시 `reason: "history"`로 모달이 닫힙니다.
 
 ```tsx
 <Modal history />
 
-<Modal history={{ enabled: true, url: "?modal=settings", state: { from: "home" } }} />
+<Modal
+  history={{ enabled: true, url: "?modal=settings", state: { from: "home" } }}
+/>
 ```
 
-- `history`에 `true`를 주면 기본 동작만 활성화합니다.
+- `history`에 `true`를 전달하면 기본 동작만 활성화합니다.
 - `state`는 pushState로 저장할 추가 데이터를, `url`은 주소 표시줄을 갱신할 경로를 지정합니다.
-- 여러 모달을 중첩하거나 라우터와 결합할 때는 popstate 이벤트를 중복 처리하지 않도록 조심하세요.
+- 다중 모달이나 라우터와 결합할 때는 popstate 중복 처리에 주의하세요.
 
-## 접근성 및 포커스
+## 포커스 & 접근성
 
-- `initialFocusRef`로 처음 포커스할 요소를 지정할 수 있습니다.
-- `trapFocus`(기본값 `true`)는 Tab 이동을 모달 안으로 한정합니다.
-- `restoreFocusRef`를 전달하면 모달이 닫힐 때 해당 요소로 포커스를 돌려줍니다.
-- `closeOnEsc`, `closeOnOutsideClick`, `lockScroll` 등 다양한 UX 세부 조정 옵션을 지원합니다.
+- `initialFocusRef`: 모달이 열릴 때 포커스를 줄 요소.
+- `trapFocus`(기본값 `true`): Tab 이동을 모달 내부로 한정.
+- `restoreFocusRef`: 모달이 닫힐 때 포커스를 되돌릴 요소.
+- `closeOnEsc`, `closeOnOutsideClick`, `lockScroll` 등 세부 UX 옵션을 제공합니다.
 
 ## 공개 타입
-
-`src/ui` 진입점에서 다음 타입을 사용할 수 있습니다.
 
 ```ts
 import type {
@@ -143,7 +162,8 @@ import type {
   ModalOpenChangeReason,
   ModalHistoryOptions,
   ResolvedModalHistoryOptions,
+  ModalMobileBehavior,
 } from "@/ui";
 ```
 
-필요에 따라 제네릭 컨트롤러, 히스토리 헬퍼 등을 구축할 때 재사용하세요.
+필요에 따라 커스텀 컨트롤러나 히스토리 연동 레이어를 구축할 때 재사용하세요.

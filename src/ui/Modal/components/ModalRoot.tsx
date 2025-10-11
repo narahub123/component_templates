@@ -17,6 +17,7 @@ import { createPortal } from "react-dom";
 import styles from "../Modal.module.css";
 import { ModalContext } from "../context";
 import { useModalRoot } from "../hooks";
+import { joinClassNames } from "../utils";
 import type {
   ModalImperativeHandle,
   ModalOpenChangeHandler,
@@ -24,6 +25,7 @@ import type {
   ModalOpenChangeReason,
   ModalHistoryOptions,
   ResolvedModalHistoryOptions,
+  ModalMobileBehavior,
 } from "../types";
 
 type ModalSizeValue = number | string;
@@ -52,6 +54,7 @@ type ModalProps = {
   style?: CSSProperties;
   portalElement?: HTMLElement | null;
   history?: ModalHistoryOptions;
+  mobileBehavior?: ModalMobileBehavior;
   width?: ModalSizeValue;
   height?: ModalSizeValue;
   maxWidth?: ModalSizeValue;
@@ -93,6 +96,7 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       style,
       portalElement,
       history,
+      mobileBehavior = "fullscreen",
       width,
       height,
       maxWidth,
@@ -200,6 +204,27 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       [changeOpen, resolvedHistory.enabled]
     );
 
+    const modalMobileClassName =
+      mobileBehavior === "centered"
+        ? styles.mobileCentered
+        : mobileBehavior === "sheet"
+        ? styles.mobileSheet
+        : styles.mobileFullscreen;
+
+    const portalMobileClassName =
+      mobileBehavior === "centered"
+        ? styles.portalMobileCentered
+        : mobileBehavior === "sheet"
+        ? styles.portalMobileSheet
+        : styles.portalMobileFullscreen;
+
+    const positionerMobileClassName =
+      mobileBehavior === "centered"
+        ? styles.positionerMobileCentered
+        : mobileBehavior === "sheet"
+        ? styles.positionerMobileSheet
+        : styles.positionerMobileFullscreen;
+
     const {
       isMounted,
       targetElement,
@@ -227,6 +252,7 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       onKeyDown,
       disableKeyBindings,
       className,
+      mobileClassName: modalMobileClassName,
       portalElement,
     });
 
@@ -275,6 +301,16 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       }
       return base;
     }, [sizeStyle, style]);
+
+    const portalClassName = joinClassNames(
+      styles.portal,
+      portalMobileClassName
+    );
+
+    const positionerClassName = joinClassNames(
+      styles.positioner,
+      positionerMobileClassName
+    );
 
     useEffect(() => {
       if (!resolvedHistory.enabled || typeof window === "undefined") {
@@ -394,14 +430,14 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       <ModalContext.Provider value={contextValue}>
         <div
           ref={portalRef}
-          className={styles.portal}
+          className={portalClassName}
           style={{ zIndex }}
           onMouseDown={handleRootMouseDown}
         >
           {hasOverlay ? (
             <div className={overlayClassName} aria-hidden="true" />
           ) : null}
-          <div className={styles.positioner}>
+          <div className={positionerClassName}>
             <div
               ref={contentRef}
               className={modalClassName}
