@@ -101,6 +101,7 @@ function App() {
               hasOverlay
               initialFocusRef={nestedActionRef}
               trapFocus
+              width={"50vw"}
             >
               <Modal.Header>
                 <h2>Nested modal</h2>

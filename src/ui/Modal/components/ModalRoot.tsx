@@ -26,6 +26,10 @@ import type {
   ResolvedModalHistoryOptions,
 } from "../types";
 
+type ModalSizeValue = number | string;
+
+type ModalSizeVars = Record<string, string>;
+
 type ModalProps = {
   open?: boolean;
   defaultOpen?: boolean;
@@ -48,6 +52,12 @@ type ModalProps = {
   style?: CSSProperties;
   portalElement?: HTMLElement | null;
   history?: ModalHistoryOptions;
+  width?: ModalSizeValue;
+  height?: ModalSizeValue;
+  maxWidth?: ModalSizeValue;
+  maxHeight?: ModalSizeValue;
+  minWidth?: ModalSizeValue;
+  minHeight?: ModalSizeValue;
 };
 
 const PROGRAMMATIC_REASON: ModalOpenChangeReason = "programmatic";
@@ -83,6 +93,12 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       style,
       portalElement,
       history,
+      width,
+      height,
+      maxWidth,
+      maxHeight,
+      minWidth,
+      minHeight,
     },
     ref
   ) => {
@@ -214,6 +230,52 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       portalElement,
     });
 
+    const toCssValue = useCallback((value?: ModalSizeValue) => {
+      if (value === undefined || value === null) {
+        return undefined;
+      }
+      return typeof value === "number" ? `${value}px` : value;
+    }, []);
+
+    const sizeStyle = useMemo<ModalSizeVars>(() => {
+      const vars: ModalSizeVars = {};
+      const widthValue = toCssValue(width);
+      const heightValue = toCssValue(height);
+      const maxWidthValue = toCssValue(maxWidth);
+      const maxHeightValue = toCssValue(maxHeight);
+      const minWidthValue = toCssValue(minWidth);
+      const minHeightValue = toCssValue(minHeight);
+
+      if (widthValue) {
+        vars["--modal-width"] = widthValue;
+      }
+      if (heightValue) {
+        vars["--modal-height"] = heightValue;
+      }
+      if (maxWidthValue) {
+        vars["--modal-max-width"] = maxWidthValue;
+      }
+      if (maxHeightValue) {
+        vars["--modal-max-height"] = maxHeightValue;
+      }
+      if (minWidthValue) {
+        vars["--modal-min-width"] = minWidthValue;
+      }
+      if (minHeightValue) {
+        vars["--modal-min-height"] = minHeightValue;
+      }
+
+      return vars;
+    }, [height, maxHeight, maxWidth, minHeight, minWidth, toCssValue, width]);
+
+    const modalInlineStyle = useMemo<CSSProperties>(() => {
+      const base = { ...sizeStyle } as CSSProperties;
+      if (style) {
+        return { ...base, ...style };
+      }
+      return base;
+    }, [sizeStyle, style]);
+
     useEffect(() => {
       if (!resolvedHistory.enabled || typeof window === "undefined") {
         return;
@@ -343,7 +405,7 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
             <div
               ref={contentRef}
               className={modalClassName}
-              style={style}
+              style={modalInlineStyle}
               role={role}
               aria-modal="true"
               aria-labelledby={labelledBy}

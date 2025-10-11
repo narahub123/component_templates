@@ -74,6 +74,24 @@ function Example() {
 
 `meta.nativeEvent`에는 가능하다면 원본 이벤트가 함께 전달됩니다.
 
+## 크기 커스터마이징
+
+- `width`, `height`, `maxWidth`, `maxHeight`, `minWidth`, `minHeight` props를 사용하면 픽셀·퍼센트·vw/vh 등 원하는 단위로 크기를 지정할 수 있습니다.
+- 숫자를 전달하면 px 단위로 자동 변환되며, 문자열을 전달하면 그대로 적용됩니다.
+- 내부적으로 CSS 커스텀 프로퍼티(`--modal-width` 등)를 사용하므로, 필요하다면 `style` prop으로 직접 재정의할 수도 있습니다.
+
+```tsx
+<Modal
+  open={open}
+  onOpenChange={setOpen}
+  width={720}
+  maxHeight="80vh"
+  minWidth="320px"
+>
+  ...
+</Modal>
+```
+
 ## 명령형 API
 
 모달은 `ref`를 통해 명령형 제어를 제공합니다.
