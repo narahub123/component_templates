@@ -32,4 +32,6 @@ export type {
   ModalOpenChangeMeta,
   ModalOpenChangeMetaInput,
   ModalOpenChangeReason,
+  ModalHistoryOptions,
+  ResolvedModalHistoryOptions,
 } from "./types";

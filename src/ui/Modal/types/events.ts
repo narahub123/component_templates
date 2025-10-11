@@ -4,7 +4,8 @@ export type ModalOpenChangeReason =
   | "trigger"
   | "programmatic"
   | "submit"
-  | "close-button";
+  | "close-button"
+  | "history";
 
 export type ModalOpenChangeMeta = {
   reason: ModalOpenChangeReason;

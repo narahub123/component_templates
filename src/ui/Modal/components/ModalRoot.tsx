@@ -7,7 +7,10 @@ import type {
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
+  useMemo,
+  useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
@@ -19,6 +22,8 @@ import type {
   ModalOpenChangeHandler,
   ModalOpenChangeMetaInput,
   ModalOpenChangeReason,
+  ModalHistoryOptions,
+  ResolvedModalHistoryOptions,
 } from "../types";
 
 type ModalProps = {
@@ -42,9 +47,12 @@ type ModalProps = {
   className?: string;
   style?: CSSProperties;
   portalElement?: HTMLElement | null;
+  history?: ModalHistoryOptions;
 };
 
 const PROGRAMMATIC_REASON: ModalOpenChangeReason = "programmatic";
+const HISTORY_REASON: ModalOpenChangeReason = "history";
+const HISTORY_STATE_KEY = "__modalId";
 
 type CloseIntent = {
   reason: ModalOpenChangeReason;
@@ -74,6 +82,7 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       className,
       style,
       portalElement,
+      history,
     },
     ref
   ) => {
@@ -83,6 +92,23 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
     );
 
     const open = isControlled ? Boolean(openProp) : internalOpen;
+
+    const resolvedHistory = useMemo<ResolvedModalHistoryOptions>(() => {
+      if (typeof history === "boolean") {
+        return { enabled: history };
+      }
+
+      if (!history) {
+        return { enabled: false };
+      }
+
+      const { enabled, state, url } = history;
+      return {
+        enabled: enabled ?? true,
+        state,
+        url: url ?? null,
+      };
+    }, [history]);
 
     const changeOpen = useCallback(
       (
@@ -105,7 +131,7 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
           nativeEvent: meta?.nativeEvent,
         });
       },
-      [open, isControlled, onOpenChange, setInternalOpen]
+      [open, isControlled, onOpenChange]
     );
 
     const openModal = useCallback(
@@ -129,11 +155,33 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       [changeOpen, open]
     );
 
+    const historyIdRef = useRef<string>(
+      `modal-${Math.random().toString(36).slice(2)}`
+    );
+    const historyActiveRef = useRef(false);
+    const suppressPopRef = useRef(false);
+
     const handleClose = useCallback(
       ({ reason, nativeEvent }: CloseIntent) => {
+        const shouldSyncHistory =
+          resolvedHistory.enabled &&
+          historyActiveRef.current &&
+          reason !== HISTORY_REASON &&
+          typeof window !== "undefined";
+
+        if (shouldSyncHistory) {
+          suppressPopRef.current = true;
+          historyActiveRef.current = false;
+          try {
+            window.history.back();
+          } catch (error) {
+            suppressPopRef.current = false;
+          }
+        }
+
         changeOpen(false, { reason, nativeEvent }, reason);
       },
-      [changeOpen]
+      [changeOpen, resolvedHistory.enabled]
     );
 
     const {
@@ -165,6 +213,105 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       className,
       portalElement,
     });
+
+    useEffect(() => {
+      if (!resolvedHistory.enabled || typeof window === "undefined") {
+        return;
+      }
+
+      const handlePopState = (event: PopStateEvent) => {
+        const state = event.state as Record<string, unknown> | null;
+        const isCurrentModal = Boolean(
+          state && state[HISTORY_STATE_KEY] === historyIdRef.current
+        );
+
+        if (!isCurrentModal) {
+          return;
+        }
+
+        if (suppressPopRef.current) {
+          suppressPopRef.current = false;
+          return;
+        }
+
+        historyActiveRef.current = false;
+        changeOpen(false, { reason: HISTORY_REASON, nativeEvent: event }, HISTORY_REASON);
+      };
+
+      window.addEventListener("popstate", handlePopState);
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+      };
+    }, [resolvedHistory.enabled, changeOpen]);
+
+    useEffect(() => {
+      if (
+        !resolvedHistory.enabled ||
+        !open ||
+        typeof window === "undefined" ||
+        historyActiveRef.current
+      ) {
+        return;
+      }
+
+      const state = {
+        ...(resolvedHistory.state ?? {}),
+        [HISTORY_STATE_KEY]: historyIdRef.current,
+      };
+
+      try {
+        window.history.pushState(
+          state,
+          "",
+          resolvedHistory.url ?? undefined
+        );
+        historyActiveRef.current = true;
+      } catch (error) {
+        // ignore pushState failures in non-browser environments
+      }
+    }, [
+      open,
+      resolvedHistory.enabled,
+      resolvedHistory.state,
+      resolvedHistory.url,
+    ]);
+
+    useEffect(() => {
+      if (!resolvedHistory.enabled || typeof window === "undefined") {
+        return;
+      }
+
+      return () => {
+        if (historyActiveRef.current) {
+          suppressPopRef.current = true;
+          historyActiveRef.current = false;
+          try {
+            window.history.back();
+          } catch (error) {
+            suppressPopRef.current = false;
+          }
+        }
+      };
+    }, [resolvedHistory.enabled]);
+
+    useEffect(() => {
+      if (
+        !resolvedHistory.enabled ||
+        typeof window === "undefined" ||
+        open ||
+        !historyActiveRef.current
+      ) {
+        return;
+      }
+
+      suppressPopRef.current = true;
+      historyActiveRef.current = false;
+      try {
+        window.history.back();
+      } catch (error) {
+        suppressPopRef.current = false;
+      }
+    }, [open, resolvedHistory.enabled]);
 
     useImperativeHandle(
       ref,
