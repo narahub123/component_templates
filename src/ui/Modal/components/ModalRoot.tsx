@@ -294,13 +294,20 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       return vars;
     }, [height, maxHeight, maxWidth, minHeight, minWidth, toCssValue, width]);
 
+    const safeAreaPadding = mobileBehavior === "centered"
+      ? {
+          paddingLeft: "calc(env(safe-area-inset-left, 0) + 1.25rem)",
+          paddingRight: "calc(env(safe-area-inset-right, 0) + 1.25rem)",
+        }
+      : {};
+
     const modalInlineStyle = useMemo<CSSProperties>(() => {
-      const base = { ...sizeStyle } as CSSProperties;
+      const base = { ...sizeStyle, ...safeAreaPadding } as CSSProperties;
       if (style) {
         return { ...base, ...style };
       }
       return base;
-    }, [sizeStyle, style]);
+    }, [sizeStyle, style, safeAreaPadding]);
 
     const portalClassName = joinClassNames(
       styles.portal,

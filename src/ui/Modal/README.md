@@ -102,6 +102,7 @@ function Example() {
 | `"sheet"`     | 바텀시트 형태로 전환, 최대 높이는 `maxHeight`로 제한         |
 
 - `"centered"`를 선택한 경우에만 `width`/`maxWidth`/`minWidth` 등이 모바일에서도 그대로 적용됩니다. `"fullscreen"`과 `"sheet"`는 폭을 100vw로 강제하기 때문에 높이 관련 옵션(`maxHeight`, `minHeight`)만 영향을 줍니다.
+- `"fullscreen"`과 `"sheet"` 변형에서는 safe-area padding(`env(safe-area-inset-*)`)이 자동 적용되어 노치/라운드 엣지가 있는 기기에서도 콘텐츠가 잘리지 않습니다. `"centered"` 역시 좌·우 safe-area를 고려한 기본 여백이 포함됩니다.
 
 ```tsx
 <Modal
