@@ -1,9 +1,4 @@
-import type {
-  CSSProperties,
-  KeyboardEvent,
-  ReactNode,
-  RefObject,
-} from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode, RefObject } from "react";
 import {
   forwardRef,
   useCallback,
@@ -27,7 +22,7 @@ import type {
   ResolvedModalHistoryOptions,
   ModalMobileBehavior,
 } from "../types";
-import { LAYERS } from "../../constants/layers";
+import { LAYERS } from "../../../constants/layers";
 
 type ModalSizeValue = number | string;
 
@@ -299,12 +294,13 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       return vars;
     }, [height, maxHeight, maxWidth, minHeight, minWidth, toCssValue, width]);
 
-    const safeAreaPadding = mobileBehavior === "centered"
-      ? {
-          paddingLeft: "calc(env(safe-area-inset-left, 0) + 1.25rem)",
-          paddingRight: "calc(env(safe-area-inset-right, 0) + 1.25rem)",
-        }
-      : {};
+    const safeAreaPadding =
+      mobileBehavior === "centered"
+        ? {
+            paddingLeft: "calc(env(safe-area-inset-left, 0) + 1.25rem)",
+            paddingRight: "calc(env(safe-area-inset-right, 0) + 1.25rem)",
+          }
+        : {};
 
     const positionerZIndex = Math.max(zIndex ?? 0, overlayZIndex ?? 0) + 1;
     const contentZIndex = positionerZIndex + 1;
@@ -331,7 +327,6 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       styles.positioner,
       positionerMobileClassName
     );
-    
 
     useEffect(() => {
       if (!resolvedHistory.enabled || typeof window === "undefined") {
@@ -354,7 +349,11 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
         }
 
         historyActiveRef.current = false;
-        changeOpen(false, { reason: HISTORY_REASON, nativeEvent: event }, HISTORY_REASON);
+        changeOpen(
+          false,
+          { reason: HISTORY_REASON, nativeEvent: event },
+          HISTORY_REASON
+        );
       };
 
       window.addEventListener("popstate", handlePopState);
@@ -379,11 +378,7 @@ const ModalRoot = forwardRef<ModalImperativeHandle, ModalProps>(
       };
 
       try {
-        window.history.pushState(
-          state,
-          "",
-          resolvedHistory.url ?? undefined
-        );
+        window.history.pushState(state, "", resolvedHistory.url ?? undefined);
         historyActiveRef.current = true;
       } catch (error) {
         // ignore pushState failures in non-browser environments
@@ -493,17 +488,3 @@ ModalRoot.displayName = "ModalRoot";
 
 export type { ModalProps };
 export default ModalRoot;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
