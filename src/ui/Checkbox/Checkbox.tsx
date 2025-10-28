@@ -1,10 +1,5 @@
-import {
-  forwardRef,
-  useEffect,
-  useState,
-  type InputHTMLAttributes,
-} from "react";
-import { IoCheckbox, IoSquareOutline } from "react-icons/io5";
+import { forwardRef, type InputHTMLAttributes } from "react";
+import { Icon } from "../Icon";
 
 type ReactInputType = Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -14,37 +9,26 @@ type ReactInputType = Omit<
 type CheckboxProps = ReactInputType & {};
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ id: _id, onChange, className: _className, checked, ...props }, ref) => {
-    const [isChecked, setIsChecked] = useState(false);
-
-    const className = ["", _className].join(" ");
-
-    useEffect(() => {
-      if (checked !== undefined) {
-        setIsChecked(checked);
-      }
-    }, [checked]);
-
-    // input:checkbox의 checked 감지
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setIsChecked(e.target.checked);
-      onChange?.(e); // 외부 onChange 있으면 호출
-    };
+  ({ id: _id, className: _className, ...props }, ref) => {
+    const className = ["text-xl", _className].join(" ");
 
     return (
       <label htmlFor={_id}>
         <input
           type="checkbox"
+          className="sr-only peer"
           id={_id}
           ref={ref}
-          onChange={handleChange}
-          checked={isChecked}
           {...props}
-          hidden
         />
-        <span className={className} style={{ display: "flex" }}>
-          {isChecked ? <IoCheckbox /> : <IoSquareOutline />}
-        </span>
+        <Icon
+          name="checkbox"
+          className={`inline peer-checked:hidden text-gray-400 ${className}`}
+        />
+        <Icon
+          name="checkboxFill"
+          className={`hidden peer-checked:inline text-orange-400 ${className}`}
+        />
       </label>
     );
   }
