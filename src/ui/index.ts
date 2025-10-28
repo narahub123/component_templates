@@ -11,3 +11,5 @@ export type {
   ModalMobileBehavior,
 } from "./Modal";
 export { LAYERS } from "../constants/layers";
+
+export * from "./Checkbox";
