@@ -19,7 +19,7 @@ export const Icon: FC<IconProps> = ({
 
   const Comp = icons[name];
   return (
-    <span className={className} {...props}>
+    <span className={className} {...props} aria-hidden="true">
       <Comp />
     </span>
   );
