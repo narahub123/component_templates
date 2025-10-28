@@ -42,7 +42,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           {...props}
           hidden
         />
-        <span className={className}>
+        <span className={className} style={{ display: "flex" }}>
           {isChecked ? <IoCheckbox /> : <IoSquareOutline />}
         </span>
       </label>

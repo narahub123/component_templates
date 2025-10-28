@@ -18,13 +18,12 @@ type ModalComponent = ForwardRefExoticComponent<
   CloseButton: typeof ModalCloseButton;
 };
 
-const Modal = ModalRoot as ModalComponent;
+export const Modal = ModalRoot as ModalComponent;
 Modal.Header = ModalHeader;
 Modal.Body = ModalBody;
 Modal.Footer = ModalFooter;
 Modal.CloseButton = ModalCloseButton;
 
-export default Modal;
 export type { ModalProps };
 export type {
   ModalImperativeHandle,
@@ -36,3 +35,5 @@ export type {
   ResolvedModalHistoryOptions,
   ModalMobileBehavior,
 } from "./types";
+
+export * from "./context";
